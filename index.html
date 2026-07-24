@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>南凤福利协会 · Committee Handbook</title>
+<script src="Member%20Handbook/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#142F63; --navy-deep:#0C1E42; --navy-soft:#E8EDF6;
+  --gold:#C3A04C; --gold-soft:#F5EEDC;
+  --paper:#F6F7FA; --card:#FFFFFF; --ink:#1C2434; --dim:#6B7386; --line:#E3E6EC;
+  --tabbar-h:64px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  font-family:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  background:var(--paper); color:var(--ink);
+  padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+}
+.wrap{max-width:520px;margin:0 auto}
+
+/* ---------- Header ---------- */
+header{
+  background:linear-gradient(160deg,var(--navy-deep) 0%,var(--navy) 70%);
+  color:#fff; padding:20px 20px 16px;
+}
+header .org-cn{font-size:1.5rem;font-weight:700;letter-spacing:.14em}
+header .org-en{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:#BCC9E4;margin-top:3px}
+header .rule{height:2px;width:44px;background:var(--gold);margin-top:10px;border-radius:2px}
+header .doc-title{margin-top:10px;font-size:.86rem;color:#E4EAF6}
+header .stamp{display:inline-block;margin-top:8px;font-size:.62rem;letter-spacing:.12em;border:1px solid rgba(255,255,255,.35);border-radius:3px;padding:2px 7px;color:#CBD6EC}
+
+/* ---------- Section heads ---------- */
+.section-head{padding:18px 20px 10px}
+.section-head .cn{font-size:1.15rem;font-weight:700;color:var(--navy)}
+.section-head .en{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+
+/* ---------- Panels ---------- */
+.panel{display:none}
+.panel.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel.active{animation:none}}
+
+/* ---------- Tab 1: roster list ---------- */
+.roster{background:var(--card);margin:0 14px 16px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.roster-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.roster-row:last-child{border-bottom:none}
+.roster-no{flex:0 0 26px;font-size:.72rem;font-weight:600;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
+.roster-name .en{font-size:.95rem;font-weight:600}
+.roster-name .cn{font-size:.85rem;color:var(--dim);margin-left:8px}
+.roster-title{margin-left:auto;font-size:.72rem;color:var(--dim);text-align:right}
+.count-chip{margin:0 20px 8px;display:inline-block;font-size:.72rem;color:var(--navy);background:var(--navy-soft);border-radius:20px;padding:3px 12px}
+
+/* ---------- Cards (Tabs 2 & 3) ---------- */
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 16px}
+.person-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 10px 14px;text-align:center}
+.avatar{width:76px;height:76px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 10px;background:var(--navy-soft)}
+.avatar.ring{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--gold)}
+.avatar-fallback{width:76px;height:76px;border-radius:50%;margin:0 auto 10px;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:700}
+.avatar-fallback.ring{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--gold)}
+.p-title{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:4px}
+.p-title-cn{font-size:.78rem;color:var(--navy);font-weight:600;margin-bottom:6px}
+.p-name-en{font-size:.92rem;font-weight:600;line-height:1.25}
+.p-name-cn{font-size:.84rem;color:var(--dim);margin-top:2px}
+
+/* ---------- Tab 3: accordions ---------- */
+.acc{margin:0 14px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.acc-head{width:100%;display:flex;align-items:center;gap:10px;padding:14px 16px;background:none;border:none;cursor:pointer;text-align:left;font-family:inherit}
+.acc-head .bar{flex:0 0 4px;height:30px;border-radius:2px;background:var(--gold)}
+.acc-head .t-cn{font-size:1rem;font-weight:700;color:var(--navy)}
+.acc-head .t-en{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:1px}
+.acc-head .n{margin-left:auto;font-size:.7rem;color:var(--dim);background:var(--paper);border-radius:20px;padding:2px 9px}
+.acc-head .chev{flex:0 0 auto;color:var(--dim);transition:transform .2s;font-size:.8rem;margin-left:6px}
+.acc.open .chev{transform:rotate(180deg)}
+.acc-body{display:none;border-top:1px solid var(--line);padding-top:12px}
+.acc.open .acc-body{display:block}
+
+/* ---------- Tab 4: events ---------- */
+.month-label{padding:6px 22px 6px;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.event-card{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 14px 10px;padding:13px 14px;align-items:flex-start}
+.event-card.past{opacity:.5}
+.date-badge{flex:0 0 52px;text-align:center;background:var(--navy);color:#fff;border-radius:9px;padding:7px 0 6px}
+.date-badge .d{font-size:1.15rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.date-badge .m{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#BCC9E4;margin-top:2px}
+.event-card.next .date-badge{background:var(--gold);color:var(--navy-deep)}
+.event-card.next .date-badge .m{color:#5d4c1e}
+.event-name{font-size:.92rem;font-weight:600;line-height:1.3}
+.event-cn{font-size:.82rem;color:var(--dim)}
+.event-pic{margin-top:5px;font-size:.75rem;color:var(--navy)}
+.event-pic b{font-weight:600}
+.event-day{font-size:.7rem;color:var(--dim);margin-top:2px}
+
+/* ---------- States ---------- */
+.state{padding:60px 30px;text-align:center;color:var(--dim);font-size:.88rem;line-height:1.6}
+.state .big{font-size:1.6rem;margin-bottom:8px}
+
+/* ---------- Bottom tab bar ---------- */
+nav{
+  position:fixed;left:0;right:0;bottom:0;height:calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  background:var(--card);border-top:1px solid var(--line);
+  display:flex;max-width:520px;margin:0 auto;z-index:10;
+}
+nav button{
+  flex:1;background:none;border:none;cursor:pointer;font-family:inherit;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--dim);position:relative;padding-top:6px;
+}
+nav button .ico{font-size:1.15rem;line-height:1}
+nav button .lb-cn{font-size:.72rem;font-weight:600}
+nav button .lb-en{font-size:.55rem;letter-spacing:.06em;text-transform:uppercase}
+nav button.active{color:var(--navy)}
+nav button.active::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--gold);border-radius:0 0 3px 3px}
+footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="org-cn">南凤福利协会</div>
+    <div class="org-en">Nam Hong Welfare Service Society</div>
+    <div class="rule"></div>
+    <div class="doc-title">委员手册 · Management Committee Handbook</div>
+    <span class="stamp" id="updatedStamp">LOADING…</span>
+  </header>
+
+  <div id="panel-members" class="panel active"></div>
+  <div id="panel-bearers" class="panel"></div>
+  <div id="panel-subcom" class="panel"></div>
+  <div id="panel-events" class="panel"></div>
+
+  <footer id="footNote"></footer>
+</div>
+
+<nav>
+  <button class="active" data-p="members"><span class="ico">▤</span><span class="lb-cn">委员名单</span><span class="lb-en">Members</span></button>
+  <button data-p="bearers"><span class="ico">◈</span><span class="lb-cn">执行委员</span><span class="lb-en">Office Bearers</span></button>
+  <button data-p="subcom"><span class="ico">❖</span><span class="lb-cn">小组委员会</span><span class="lb-en">Sub-Committees</span></button>
+  <button data-p="events"><span class="ico">▦</span><span class="lb-cn">活动日程</span><span class="lb-en">Events</span></button>
+</nav>
+
+<script>
+/* ============================================================
+   NHWSS Committee Handbook — reads data.xlsx in this folder.
+   To update content: replace data.xlsx (and photos/) in the
+   GitHub repository. No changes to this file are needed.
+   ============================================================ */
+
+const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const DAYS=["Sunday 星期日","Monday 星期一","Tuesday 星期二","Wednesday 星期三","Thursday 星期四","Friday 星期五","Saturday 星期六"];
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function initials(en,cn){
+  const c=String(cn||"").trim(), e=String(en||"").trim();
+  if(c) return c.slice(-2);                      // Chinese given name reads best
+  return e.split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
+}
+function avatarHTML(photo,en,cn,ring){
+  const r=ring?" ring":"";
+  if(photo && String(photo).trim()){
+    const src="photos/"+encodeURIComponent(String(photo).trim());
+    return `<img class="avatar${r}" src="${src}" alt="${esc(en)}" loading="lazy"
+      onerror="this.outerHTML='<div class=&quot;avatar-fallback${r}&quot;>${esc(initials(en,cn))}</div>'">`;
+  }
+  return `<div class="avatar-fallback${r}">${esc(initials(en,cn))}</div>`;
+}
+function sectionHead(cn,en){return `<div class="section-head"><div class="cn">${cn}</div><div class="en">${en}</div></div>`;}
+function personCard(p,ring){
+  return `<div class="person-card">
+    ${avatarHTML(p.photo,p.nameEn,p.nameCn,ring)}
+    ${p.titleEn?`<div class="p-title">${esc(p.titleEn)}</div>`:""}
+    ${p.titleCn?`<div class="p-title-cn">${esc(p.titleCn)}</div>`:""}
+    <div class="p-name-en">${esc(p.nameEn)}</div>
+    ${p.nameCn?`<div class="p-name-cn">${esc(p.nameCn)}</div>`:""}
+  </div>`;
+}
+
+/* ---- flexible column pickup: matches header names loosely ---- */
+function pick(row,keys){
+  for(const k of Object.keys(row)){
+    const kk=k.toLowerCase().replace(/[\s_()\-\/·]/g,"");
+    for(const want of keys){ if(kk.includes(want)) return row[k]; }
+  }
+  return "";
+}
+function toPerson(row){
+  return {
+    order:Number(pick(row,["no","order","序"]))||9999,
+    nameEn:pick(row,["nameenglish","nameen","englishname"])||pick(row,["name"]),
+    nameCn:pick(row,["name中文","namecn","中文名","中文","chinesename"]),
+    titleEn:pick(row,["titleenglish","titleen","title"]),
+    titleCn:pick(row,["title中文","titlecn","职位","职务"]),
+    photo:pick(row,["photo","照片","image"]),
+    group:pick(row,["subcommitteeenglish","subcommittee","小组"]),
+    groupCn:pick(row,["subcommittee中文","小组中文"])
+  };
+}
+function excelDate(v){
+  if(v instanceof Date) return v;
+  if(typeof v==="number") return new Date(Math.round((v-25569)*86400*1000)); // Excel serial → JS
+  const d=new Date(String(v)); return isNaN(d)?null:d;
+}
+
+/* ---------------- renderers ---------------- */
+function renderMembers(rows){
+  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
+  let h=sectionHead("委员名单","Full Committee Roster");
+  h+=`<span class="count-chip">共 ${ps.length} 位委员 · ${ps.length} members</span>`;
+  h+=`<div class="roster">`+ps.map((p,i)=>`
+    <div class="roster-row">
+      <div class="roster-no">${String(p.order===9999?i+1:p.order).padStart(2,"0")}</div>
+      <div class="roster-name"><span class="en">${esc(p.nameEn)}</span><span class="cn">${esc(p.nameCn)}</span></div>
+      ${p.titleEn?`<div class="roster-title">${esc(p.titleEn)}</div>`:""}
+    </div>`).join("")+`</div>`;
+  document.getElementById("panel-members").innerHTML=h;
+}
+function renderBearers(rows){
+  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
+  document.getElementById("panel-bearers").innerHTML=
+    sectionHead("执行委员","Office Bearers")+
+    `<div class="card-grid">`+ps.map(p=>personCard(p,true)).join("")+`</div>`;
+}
+function renderSubcom(rows){
+  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn);
+  const groups=new Map();
+  for(const p of ps){
+    const key=String(p.group||"(Unassigned)").trim();
+    if(!groups.has(key)) groups.set(key,{cn:p.groupCn,members:[]});
+    const g=groups.get(key); if(!g.cn&&p.groupCn) g.cn=p.groupCn;
+    g.members.push(p);
+  }
+  let h=sectionHead("小组委员会","Sub-Committees");
+  let i=0;
+  for(const [en,g] of groups){
+    g.members.sort((a,b)=>a.order-b.order);
+    h+=`<div class="acc" id="acc${i}">
+      <button class="acc-head" onclick="document.getElementById('acc${i}').classList.toggle('open')">
+        <span class="bar"></span>
+        <span><div class="t-cn">${esc(g.cn||en)}</div><div class="t-en">${esc(en)}</div></span>
+        <span class="n">${g.members.length} 位</span><span class="chev">▼</span>
+      </button>
+      <div class="acc-body"><div class="card-grid">${g.members.map(p=>personCard(p,false)).join("")}</div></div>
+    </div>`;
+    i++;
+  }
+  document.getElementById("panel-subcom").innerHTML=h;
+}
+function renderEvents(rows){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const evs=rows.map(r=>({
+    date:excelDate(pick(r,["date","日期"])),
+    nameEn:pick(r,["eventenglish","eventen","event","活动名称","活动"]),
+    nameCn:pick(r,["event中文","eventcn"]),
+    pic:pick(r,["personnelincharge","personincharge","pic","incharge","负责人"])
+  })).filter(e=>e.date&&(e.nameEn||e.nameCn)).sort((a,b)=>a.date-b.date);
+
+  let h=sectionHead("活动日程","Key Event Dates");
+  if(!evs.length){h+=`<div class="state">No events listed yet 暂无活动</div>`;}
+  const nextIdx=evs.findIndex(e=>e.date>=today);
+  let lastMonth="";
+  evs.forEach((e,idx)=>{
+    const mKey=e.date.getFullYear()+"-"+e.date.getMonth();
+    if(mKey!==lastMonth){lastMonth=mKey;h+=`<div class="month-label">${MONTHS[e.date.getMonth()]} ${e.date.getFullYear()}</div>`;}
+    const cls=e.date<today?"past":(idx===nextIdx?"next":"");
+    h+=`<div class="event-card ${cls}">
+      <div class="date-badge"><div class="d">${e.date.getDate()}</div><div class="m">${MONTHS[e.date.getMonth()]}</div></div>
+      <div>
+        <div class="event-name">${esc(e.nameEn)}</div>
+        ${e.nameCn?`<div class="event-cn">${esc(e.nameCn)}</div>`:""}
+        <div class="event-day">${DAYS[e.date.getDay()]}</div>
+        ${e.pic?`<div class="event-pic">In charge 负责: <b>${esc(e.pic)}</b></div>`:""}
+      </div>
+    </div>`;
+  });
+  document.getElementById("panel-events").innerHTML=h;
+}
+
+/* ---------------- tab switching ---------------- */
+document.querySelectorAll("nav button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    document.getElementById("panel-"+b.dataset.p).classList.add("active");
+    window.scrollTo({top:0});
+  });
+});
+
+/* ---------------- load workbook ---------------- */
+(async function(){
+  try{
+    const res=await fetch("data.xlsx?t="+Date.now(),{cache:"no-store"});
+    if(!res.ok) throw new Error("data.xlsx not found ("+res.status+")");
+    const buf=await res.arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(buf),{type:"array",cellDates:true});
+    const sheet=n=>{ // find sheet whose name contains n (case-insensitive)
+      const s=wb.SheetNames.find(x=>x.toLowerCase().includes(n));
+      return s?XLSX.utils.sheet_to_json(wb.Sheets[s],{defval:""}):[];
+    };
+    renderMembers(sheet("committee"));
+    renderBearers(sheet("bearer"));
+    renderSubcom(sheet("sub"));
+    renderEvents(sheet("event"));
+    const info={};
+    for(const r of sheet("info")){
+      const vals=Object.values(r);
+      if(vals.length>=2) info[String(vals[0]).toLowerCase().replace(/[\s_]/g,"")]=vals[1];
+    }
+    const upd=info["lastupdated"]||info["updated"]||"";
+    document.getElementById("updatedStamp").textContent=upd?("UPDATED "+String(upd).toUpperCase()):"COMMITTEE HANDBOOK";
+    const note=info["footernote"]||info["footer"]||"";
+    document.getElementById("footNote").textContent=note||"南凤福利协会 Nam Hong Welfare Service Society · For committee members' reference 仅供委员参考";
+  }catch(err){
+    document.getElementById("updatedStamp").textContent="DATA NOT LOADED";
+    document.getElementById("panel-members").innerHTML=
+      `<div class="state"><div class="big">⚠</div>Could not load <b>data.xlsx</b>.<br>
+       Please make sure data.xlsx is uploaded in the same folder as this page.<br>
+       无法读取 data.xlsx，请确认文件已上传。<br><br><small>${esc(err.message)}</small></div>`;
+  }
+})();
+</script>
+</body>
+</html>
