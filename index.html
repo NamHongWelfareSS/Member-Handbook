@@ -105,7 +105,7 @@ header .stamp{display:inline-block;margin-top:8px;font-size:.62rem;letter-spacin
 .acc.open .acc-body{display:block}
 
 /* ---------- Tab 4: events ---------- */
-.month-label{padding:6px 22px 6px;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.month-label{padding:14px 22px 8px;font-size:1.1rem;letter-spacing:.06em;color:var(--navy);font-weight:700;border-bottom:2px solid var(--navy-soft);margin:0 8px}
 .event-card{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 14px 10px;padding:13px 14px;align-items:flex-start}
 .event-card.past{opacity:.5}
 .date-badge{flex:0 0 52px;text-align:center;background:var(--navy);color:#fff;border-radius:9px;padding:7px 0 6px}
@@ -153,19 +153,19 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
     <span class="stamp" id="updatedStamp">LOADING…</span>
   </header>
 
-  <div id="panel-members" class="panel active"></div>
+  <div id="panel-events" class="panel active"></div>
+  <div id="panel-members" class="panel"></div>
   <div id="panel-bearers" class="panel"></div>
   <div id="panel-subcom" class="panel"></div>
-  <div id="panel-events" class="panel"></div>
 
   <footer id="footNote"></footer>
 </div>
 
 <nav>
-  <button class="active" data-p="members"><span class="ico">▤</span><span class="lb-cn">委员名单</span><span class="lb-en">Members</span></button>
+  <button class="active" data-p="events"><span class="ico">▦</span><span class="lb-cn">活动日程</span><span class="lb-en">Events</span></button>
+  <button data-p="members"><span class="ico">▤</span><span class="lb-cn">委员名单</span><span class="lb-en">Members</span></button>
   <button data-p="bearers"><span class="ico">◈</span><span class="lb-cn">执行委员</span><span class="lb-en">Office Bearers</span></button>
   <button data-p="subcom"><span class="ico">❖</span><span class="lb-cn">小组委员会</span><span class="lb-en">Sub-Committees</span></button>
-  <button data-p="events"><span class="ico">▦</span><span class="lb-cn">活动日程</span><span class="lb-en">Events</span></button>
 </nav>
 
 <script>
@@ -176,6 +176,7 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
    ============================================================ */
 
 const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const MONTHS_FULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS=["Sunday 星期日","Monday 星期一","Tuesday 星期二","Wednesday 星期三","Thursday 星期四","Friday 星期五","Saturday 星期六"];
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -225,15 +226,28 @@ function toPerson(row){
   };
 }
 function excelDate(v){
-  if(v instanceof Date) return v;
-  if(typeof v==="number") return new Date(Math.round((v-25569)*86400*1000)); // Excel serial → JS
-  const d=new Date(String(v)); return isNaN(d)?null:d;
+  // Build a LOCAL-time date whose Y/M/D matches the sheet exactly, with no
+  // timezone drift. We derive Y/M/D via UTC getters (stable) then re-create
+  // in local time, so getDate()/getMonth()/getDay() are always correct.
+  let y,m,day;
+  if(v instanceof Date){ y=v.getUTCFullYear(); m=v.getUTCMonth(); day=v.getUTCDate(); }
+  else if(typeof v==="number"){
+    const t=new Date(Math.round((v-25569)*86400*1000)); // Excel serial → ms (UTC midnight)
+    y=t.getUTCFullYear(); m=t.getUTCMonth(); day=t.getUTCDate();
+  } else {
+    const s=String(v).trim();
+    let mt=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);          // DD/MM/YYYY or DD-MM-YYYY
+    if(mt){ day=+mt[1]; m=+mt[2]-1; y=+mt[3]; }
+    else { mt=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/); if(mt){ y=+mt[1]; m=+mt[2]-1; day=+mt[3]; } // YYYY-MM-DD
+    else { const t=new Date(s); if(isNaN(t)) return null; y=t.getFullYear(); m=t.getMonth(); day=t.getDate(); } }
+  }
+  return new Date(y,m,day);
 }
 
 /* ---------------- renderers ---------------- */
 function renderMembers(rows){
   const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
-  let h=sectionHead("委员名单","Full Committee Roster");
+  let h=sectionHead("委员名单","Full Committee Roster (in alphabetical order)");
   h+=`<span class="count-chip">共 ${ps.length} 位委员 · ${ps.length} members</span>`;
   h+=`<div class="roster">`+ps.map((p,i)=>`
     <div class="roster-row">
@@ -289,7 +303,7 @@ function renderEvents(rows){
   let lastMonth="";
   evs.forEach((e,idx)=>{
     const mKey=e.date.getFullYear()+"-"+e.date.getMonth();
-    if(mKey!==lastMonth){lastMonth=mKey;h+=`<div class="month-label">${MONTHS[e.date.getMonth()]} ${e.date.getFullYear()}</div>`;}
+    if(mKey!==lastMonth){lastMonth=mKey;h+=`<div class="month-label">${MONTHS_FULL[e.date.getMonth()]} ${e.date.getFullYear()}</div>`;}
     const cls=e.date<today?"past":(idx===nextIdx?"next":"");
     h+=`<div class="event-card ${cls}">
       <div class="date-badge"><div class="d">${e.date.getDate()}</div><div class="m">${MONTHS[e.date.getMonth()]}</div></div>
@@ -321,7 +335,7 @@ document.querySelectorAll("nav button").forEach(b=>{
     const res=await fetch("data.xlsx?t="+Date.now(),{cache:"no-store"});
     if(!res.ok) throw new Error("data.xlsx not found ("+res.status+")");
     const buf=await res.arrayBuffer();
-    const wb=XLSX.read(new Uint8Array(buf),{type:"array",cellDates:true});
+    const wb=XLSX.read(new Uint8Array(buf),{type:"array"}); // dates arrive as raw serials; excelDate() handles them
     const sheet=n=>{ // find sheet whose name contains n (case-insensitive)
       const s=wb.SheetNames.find(x=>x.toLowerCase().includes(n));
       return s?XLSX.utils.sheet_to_json(wb.Sheets[s],{defval:""}):[];
