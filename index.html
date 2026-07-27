@@ -141,9 +141,48 @@ nav button .lb-en{font-size:.55rem;letter-spacing:.06em;text-transform:uppercase
 nav button.active{color:var(--navy)}
 nav button.active::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--gold);border-radius:0 0 3px 3px}
 footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;line-height:1.6}
+
+/* ---------- Password gate ---------- */
+#gate{position:fixed;inset:0;z-index:100;background:linear-gradient(160deg,var(--navy-deep) 0%,var(--navy) 80%);
+  display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-card{width:100%;max-width:340px;background:var(--card);border-radius:16px;padding:30px 24px 26px;text-align:center;
+  box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.gate-cn{font-size:1.5rem;font-weight:700;letter-spacing:.14em;color:var(--navy)}
+.gate-en{font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-top:4px}
+.gate-rule{height:2px;width:44px;background:var(--gold);border-radius:2px;margin:14px auto 18px}
+.gate-loading{color:var(--dim);font-size:.9rem;padding:8px 0}
+.gate-label{font-size:.9rem;font-weight:600;color:var(--ink)}
+.gate-sub{font-size:.76rem;color:var(--dim);margin-top:4px;margin-bottom:16px}
+#gatePw{width:100%;padding:12px 14px;font-size:1rem;font-family:inherit;border:1px solid var(--line);
+  border-radius:10px;outline:none;text-align:center;letter-spacing:.05em}
+#gatePw:focus{border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-soft)}
+#gateBtn{width:100%;margin-top:12px;padding:12px;font-size:.95rem;font-weight:600;font-family:inherit;color:#fff;
+  background:var(--navy);border:none;border-radius:10px;cursor:pointer}
+#gateBtn:active{background:var(--navy-deep)}
+.gate-err{display:none;color:#C0392B;font-size:.78rem;margin-top:12px}
 </style>
 </head>
 <body>
+
+<!-- ===== Password gate ===== -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-cn">南凤福利协会</div>
+    <div class="gate-en">Nam Hong Welfare Service Society</div>
+    <div class="gate-rule"></div>
+    <div id="gateLoading" class="gate-loading">Loading… 载入中…</div>
+    <div id="gateForm" style="display:none">
+      <div class="gate-label">委员手册 · Committee Handbook</div>
+      <div class="gate-sub">Please enter the password 请输入密码</div>
+      <input id="gatePw" type="password" inputmode="text" autocomplete="off"
+             placeholder="Password 密码" aria-label="Password">
+      <button id="gateBtn">进入 Enter</button>
+      <div id="gateErr" class="gate-err">Incorrect password 密码错误</div>
+    </div>
+  </div>
+</div>
+
+<div id="appWrap" style="display:none">
 <div class="wrap">
   <header>
     <div class="org-cn">南凤福利协会</div>
@@ -167,6 +206,7 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
   <button data-p="bearers"><span class="ico">◈</span><span class="lb-cn">执行委员</span><span class="lb-en">Office Bearers</span></button>
   <button data-p="subcom"><span class="ico">❖</span><span class="lb-cn">小组委员会</span><span class="lb-en">Sub-Committees</span></button>
 </nav>
+</div>
 
 <script>
 /* ============================================================
@@ -364,7 +404,30 @@ document.querySelectorAll("nav button").forEach(b=>{
   });
 });
 
-/* ---------------- load workbook ---------------- */
+/* ---------------- load workbook + password gate ---------------- */
+let PAGE_PASSWORD="NHWSS2026";   // fallback if Info!B4 is blank
+let _renderAll=null;
+
+function unlockAndRender(){
+  if(_renderAll) _renderAll();
+  const g=document.getElementById("gate");
+  if(g) g.style.display="none";
+  document.getElementById("appWrap").style.display="";
+}
+
+function tryPassword(){
+  const inp=document.getElementById("gatePw");
+  const err=document.getElementById("gateErr");
+  const val=(inp.value||"").trim();
+  if(val===String(PAGE_PASSWORD).trim()){
+    try{sessionStorage.setItem("nhwss_ok","1");}catch(e){}
+    unlockAndRender();
+  }else{
+    err.style.display="block";
+    inp.value=""; inp.focus();
+  }
+}
+
 (async function(){
   try{
     const res=await fetch("data.xlsx?t="+Date.now(),{cache:"no-store"});
@@ -375,24 +438,47 @@ document.querySelectorAll("nav button").forEach(b=>{
       const s=wb.SheetNames.find(x=>x.toLowerCase().includes(n));
       return s?XLSX.utils.sheet_to_json(wb.Sheets[s],{defval:""}):[];
     };
-    renderMembers(sheet("committee"));
-    renderBearers(sheet("bearer"));
-    renderSubcom(sheet("sub"));
-    renderEvents(sheet("event"));
-    const info={};
-    for(const r of sheet("info")){
-      const vals=Object.values(r);
-      if(vals.length>=2) info[String(vals[0]).toLowerCase().replace(/[\s_]/g,"")]=vals[1];
+
+    // Read password straight from Info!B4; fall back to NHWSS2026 if blank/missing
+    const infoName=wb.SheetNames.find(x=>x.toLowerCase().includes("info"));
+    if(infoName){
+      const cell=wb.Sheets[infoName]["B4"];
+      const b4=cell && cell.v!=null ? String(cell.v).trim() : "";
+      if(b4) PAGE_PASSWORD=b4;
     }
-    const upd=info["lastupdated"]||info["updated"]||"";
-    document.getElementById("updatedStamp").textContent=upd?("UPDATED "+String(upd).toUpperCase()):"COMMITTEE HANDBOOK";
-    const note=info["footernote"]||info["footer"]||"";
-    document.getElementById("footNote").textContent=note||"南凤福利协会 Nam Hong Welfare Service Society · For committee members' reference 仅供委员参考";
+
+    // Prepare (but don't run) all rendering until unlocked
+    _renderAll=function(){
+      renderMembers(sheet("committee"));
+      renderBearers(sheet("bearer"));
+      renderSubcom(sheet("sub"));
+      renderEvents(sheet("event"));
+      const info={};
+      for(const r of sheet("info")){
+        const vals=Object.values(r);
+        if(vals.length>=2) info[String(vals[0]).toLowerCase().replace(/[\s_]/g,"")]=vals[1];
+      }
+      const upd=info["lastupdated"]||info["updated"]||"";
+      document.getElementById("updatedStamp").textContent=upd?("UPDATED "+String(upd).toUpperCase()):"COMMITTEE HANDBOOK";
+      const note=info["footernote"]||info["footer"]||"";
+      document.getElementById("footNote").textContent=note||"南凤福利协会 Nam Hong Welfare Service Society · For committee members' reference 仅供委员参考";
+    };
+
+    // Wire up the gate
+    document.getElementById("gateBtn").addEventListener("click",tryPassword);
+    document.getElementById("gatePw").addEventListener("keydown",e=>{if(e.key==="Enter")tryPassword();});
+    document.getElementById("gateLoading").style.display="none";
+    document.getElementById("gateForm").style.display="";
+    document.getElementById("gatePw").focus();
+
+    // Skip the prompt if already unlocked earlier this session
+    let ok=false; try{ok=sessionStorage.getItem("nhwss_ok")==="1";}catch(e){}
+    if(ok) unlockAndRender();
+
   }catch(err){
-    document.getElementById("updatedStamp").textContent="DATA NOT LOADED";
-    document.getElementById("panel-members").innerHTML=
+    document.getElementById("gateLoading").innerHTML=
       `<div class="state"><div class="big">⚠</div>Could not load <b>data.xlsx</b>.<br>
-       Please make sure data.xlsx is uploaded in the same folder as this page.<br>
+       Please make sure data.xlsx is in the same folder as this page.<br>
        无法读取 data.xlsx，请确认文件已上传。<br><br><small>${esc(err.message)}</small></div>`;
   }
 })();
