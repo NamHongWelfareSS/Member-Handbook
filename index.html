@@ -108,12 +108,11 @@ header .stamp{display:inline-block;margin-top:8px;font-size:.62rem;letter-spacin
 .month-label{padding:14px 22px 8px;font-size:1.1rem;letter-spacing:.06em;color:var(--navy);font-weight:700;border-bottom:2px solid var(--navy-soft);margin:0 8px}
 .event-card{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 14px 10px;padding:13px 14px;align-items:flex-start}
 .event-card.past{opacity:.5}
-.date-badge{flex:0 0 60px;text-align:center;background:var(--navy);color:#fff;border-radius:9px;padding:7px 0 6px}
-.date-badge .d{font-size:.9rem;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
-.date-badge .m{font-size:.9rem;font-weight:600;line-height:1.25;color:#DCE4F3}
-.date-badge .mcn{font-size:.9rem;font-weight:600;line-height:1.25;color:#DCE4F3}
+.date-badge{flex:0 0 82px;text-align:center;background:var(--navy);color:#fff;border-radius:9px;padding:8px 4px 7px}
+.date-badge .d{font-size:.9rem;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap}
+.date-badge .m{font-size:.9rem;font-weight:600;line-height:1.25;color:#DCE4F3;font-variant-numeric:tabular-nums}
 .event-card.next .date-badge{background:var(--gold);color:var(--navy-deep)}
-.event-card.next .date-badge .m,.event-card.next .date-badge .mcn{color:#5d4c1e}
+.event-card.next .date-badge .m{color:#5d4c1e}
 .event-name{font-size:.9rem;font-weight:600;line-height:1.35;color:var(--ink)}
 .event-cn{font-size:.9rem;font-weight:600;line-height:1.35;color:var(--ink)}
 .event-pic{margin-top:5px;font-size:.9rem;color:var(--navy)}
@@ -345,9 +344,8 @@ function renderSubcom(rows){
 function eventCard(e,cls){
   return `<div class="event-card ${cls}">
     <div class="date-badge">
-      <div class="d">${e.date.getDate()}日</div>
-      <div class="m">${MONTHS[e.date.getMonth()]}</div>
-      <div class="mcn">${MONTHS_CN[e.date.getMonth()]}</div>
+      <div class="d">${String(e.date.getDate()).padStart(2,"0")} ${MONTHS[e.date.getMonth()]}</div>
+      <div class="m">${e.date.getFullYear()}</div>
     </div>
     <div>
       <div class="event-name">${esc(e.nameEn)}</div>
