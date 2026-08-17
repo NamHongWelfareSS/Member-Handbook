@@ -74,6 +74,9 @@ header .stamp{display:inline-block;margin-top:8px;font-size:.62rem;letter-spacin
 .roster-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line)}
 .roster-row:last-child{border-bottom:none}
 .roster-no{flex:0 0 26px;font-size:.72rem;font-weight:600;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
+.roster-av{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:0 0 38px;background:var(--navy-soft)}
+.roster-av-fb{width:38px;height:38px;border-radius:50%;flex:0 0 38px;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700}
 .roster-name .en{font-size:.95rem;font-weight:600}
 .roster-name .cn{font-size:.85rem;color:var(--dim);margin-left:8px}
 .roster-title{margin-left:auto;font-size:.72rem;color:var(--dim);text-align:right}
@@ -169,12 +172,13 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
 .legend .lg{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--ink)}
 .legend .lg i{width:11px;height:11px;border-radius:3px;display:inline-block;flex:0 0 auto}
 .cal{margin:0 10px 18px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;scroll-margin-top:96px}
-.cal-title{padding:11px 14px;font-size:1rem;font-weight:700;color:var(--navy);background:var(--navy-soft)}
+.cal-title{padding:11px 14px;background:var(--navy-soft);display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+.cal-title .ct-en,.cal-title .ct-cn{font-size:1rem;font-weight:700;color:var(--navy)}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.cal-dow{padding:5px 0;text-align:center;border-bottom:1px solid var(--line);background:var(--paper);
+.cal-dow{padding:6px 0;text-align:center;border-bottom:1px solid var(--line);background:var(--paper);
   display:flex;flex-direction:column;align-items:center;gap:1px}
-.cal-dow .dw-en{font-size:.58rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--dim)}
-.cal-dow .dw-cn{font-size:.58rem;font-weight:700;color:var(--dim)}
+.cal-dow .dw-en{font-size:.72rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)}
+.cal-dow .dw-cn{font-size:.72rem;font-weight:700;color:var(--navy)}
 .cal-cell{min-height:56px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 2px 4px}
 .cal-cell:nth-child(7n+7){border-right:none}
 .cal-cell.empty{background:#FBFCFE}
@@ -331,10 +335,21 @@ function renderMembers(rows){
   h+=`<div class="roster">`+ps.map((p,i)=>`
     <div class="roster-row">
       <div class="roster-no">${String(p.order===9999?i+1:p.order).padStart(2,"0")}</div>
+      ${rosterAvatar(p)}
       <div class="roster-name"><span class="en">${esc(p.nameEn)}</span><span class="cn">${esc(p.nameCn)}</span></div>
       ${p.titleEn?`<div class="roster-title">${esc(p.titleEn)}</div>`:""}
     </div>`).join("")+`</div>`;
   document.getElementById("panel-members").innerHTML=h;
+}
+/* Small round thumbnail for the roster rows; falls back to initials. */
+function rosterAvatar(p){
+  const fb=`<div class="roster-av-fb">${esc(initials(p.nameEn,p.nameCn))}</div>`;
+  if(p.photo && String(p.photo).trim()){
+    const src="photos/"+encodeURIComponent(String(p.photo).trim());
+    return `<img class="roster-av" src="${src}" alt="${esc(p.nameEn)}" loading="lazy"
+      onerror="this.outerHTML='<div class=&quot;roster-av-fb&quot;>${esc(initials(p.nameEn,p.nameCn))}</div>'">`;
+  }
+  return fb;
 }
 
 /* ---- Roles & Responsibilities: Office Bearers first, then sub-committees A-Z ---- */
@@ -517,15 +532,29 @@ function renderCalendar(rows){
   const today=new Date(); today.setHours(0,0,0,0);
   const curKey=today.getFullYear()+"-"+String(today.getMonth()).padStart(2,"0");
 
+  // Build a CONTINUOUS run of months from the earliest to the latest,
+  // always including the current month even if it has no events.
+  const allKeys=[...months.keys(),curKey].sort();
+  const [sy,sm]=allKeys[0].split("-").map(Number);
+  const [ey,em]=allKeys[allKeys.length-1].split("-").map(Number);
+  const span=[];
+  for(let y=sy,m=sm;;){
+    span.push([y,m]);
+    if(y===ey&&m===em) break;
+    m++; if(m>11){m=0;y++;}
+    if(span.length>240) break;                    // safety stop
+  }
+
   const DOW=[["Mon","周一"],["Tue","周二"],["Wed","周三"],["Thu","周四"],["Fri","周五"],["Sat","周六"],["Sun","周日"]];
 
-  for(const [k,list] of [...months.entries()].sort()){
-    const [yy,mm]=k.split("-").map(Number);
+  for(const [yy,mm] of span){
+    const k=yy+"-"+String(mm).padStart(2,"0");
+    const list=months.get(k)||[];
     const first=new Date(yy,mm,1);
     const daysInMonth=new Date(yy,mm+1,0).getDate();
     const lead=(first.getDay()+6)%7;               // Monday = 0
     h+=`<div class="cal" id="cal-${k}"${k===curKey?' data-current="1"':''}>
-      <div class="cal-title">${MONTHS_FULL[mm]} ${MONTHS_CN_TEXT[mm]} ${yy}年</div>
+      <div class="cal-title"><span class="ct-en">${MONTHS_FULL[mm]} ${yy}</span><span class="ct-cn">${MONTHS_CN_TEXT[mm]} ${cnYear(yy)}年</span></div>
       <div class="cal-grid">
         ${DOW.map(d=>`<div class="cal-dow"><span class="dw-en">${d[0]}</span><span class="dw-cn">${d[1]}</span></div>`).join("")}`;
     for(let i=0;i<lead;i++) h+=`<div class="cal-cell empty"></div>`;
@@ -546,6 +575,11 @@ function renderCalendar(rows){
     h+=`</div></div>`;
   }
   el.innerHTML=h;
+}
+/* 2026 -> 二零二六 */
+function cnYear(y){
+  const d="零一二三四五六七八九";
+  return String(y).split("").map(c=>d[Number(c)]).join("");
 }
 
 /* Scroll the calendar to the current month (or the next month with events). */
