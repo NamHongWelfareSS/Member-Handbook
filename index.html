@@ -318,13 +318,45 @@ function renderBearers(rows){
     sectionHead("执行委员","Office Bearers")+
     `<div class="card-grid">`+ps.map(p=>personCard(p,true)).join("")+`</div>`;
 }
+/* Classify an employee by their title into one of three groups.
+   Order matters: check assistant before physician so "TCM Clinic Assistant"
+   is never mis-read as a physician role. */
+function staffGroup(p){
+  const t=(String(p.titleEn||"")+" "+String(p.titleCn||"")).toLowerCase();
+  const isAssistant = t.includes("clinic assistant") || t.includes("中医助理") ||
+                      (t.includes("assistant") && (t.includes("tcm")||t.includes("中医")));
+  if(isAssistant) return 2;
+  if(t.includes("physician") || t.includes("中医师")) return 1;
+  return 0;   // everything else is Office
+}
 function renderStaff(rows){
   const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
   const el=document.getElementById("panel-staff");
-  if(!ps.length){el.innerHTML=sectionHead("职员","Employees")+`<div class="state">No employees listed yet 暂无职员资料</div>`;return;}
-  el.innerHTML=sectionHead("职员","Employees")+
-    `<span class="count-chip">共 ${ps.length} 位职员 · ${ps.length} employees</span>`+
-    `<div class="card-grid">`+ps.map(p=>personCard(p,false)).join("")+`</div>`;
+  let h=sectionHead("职员","Employees");
+  if(!ps.length){el.innerHTML=h+`<div class="state">No employees listed yet 暂无职员资料</div>`;return;}
+
+  const GROUPS=[
+    {cn:"办公室",   en:"Office"},
+    {cn:"中医师",   en:"TCM Physician"},
+    {cn:"中医助理", en:"TCM Clinic Assistant"}
+  ];
+  const buckets=[[],[],[]];
+  for(const p of ps) buckets[staffGroup(p)].push(p);
+
+  h+=`<span class="count-chip">共 ${ps.length} 位职员 · ${ps.length} employees</span>`;
+  GROUPS.forEach((g,i)=>{
+    const list=buckets[i];
+    if(!list.length) return;                 // hide empty groups
+    h+=`<div class="acc open" id="staffAcc${i}">
+      <button class="acc-head" onclick="document.getElementById('staffAcc${i}').classList.toggle('open')">
+        <span class="bar"></span>
+        <span><div class="t-cn">${g.cn}</div><div class="t-en">${g.en}</div></span>
+        <span class="n">${list.length} 位 staff</span><span class="chev">▼</span>
+      </button>
+      <div class="acc-body"><div class="card-grid">${list.map(p=>personCard(p,false)).join("")}</div></div>
+    </div>`;
+  });
+  el.innerHTML=h;
 }
 function renderSubcom(rows){
   const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn);
