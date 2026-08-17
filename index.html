@@ -136,8 +136,8 @@ nav button{
   color:var(--dim);position:relative;padding-top:6px;
 }
 nav button .ico{font-size:1.15rem;line-height:1}
-nav button .lb-cn{font-size:.72rem;font-weight:600}
-nav button .lb-en{font-size:.55rem;letter-spacing:.06em;text-transform:uppercase}
+nav button .lb-cn{font-size:.66rem;font-weight:600;white-space:nowrap}
+nav button .lb-en{font-size:.5rem;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
 nav button.active{color:var(--navy)}
 nav button.active::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--gold);border-radius:0 0 3px 3px}
 footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;line-height:1.6}
@@ -196,6 +196,7 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
   <div id="panel-members" class="panel"></div>
   <div id="panel-bearers" class="panel"></div>
   <div id="panel-subcom" class="panel"></div>
+  <div id="panel-staff" class="panel"></div>
 
   <footer id="footNote"></footer>
 </div>
@@ -203,8 +204,9 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
 <nav>
   <button class="active" data-p="events"><span class="ico">▦</span><span class="lb-cn">活动日程</span><span class="lb-en">Events</span></button>
   <button data-p="members"><span class="ico">▤</span><span class="lb-cn">委员名单</span><span class="lb-en">Members</span></button>
-  <button data-p="bearers"><span class="ico">◈</span><span class="lb-cn">执行委员</span><span class="lb-en">Office Bearers</span></button>
-  <button data-p="subcom"><span class="ico">❖</span><span class="lb-cn">小组委员会</span><span class="lb-en">Sub-Committees</span></button>
+  <button data-p="bearers"><span class="ico">◈</span><span class="lb-cn">执行委员</span><span class="lb-en">Bearers</span></button>
+  <button data-p="subcom"><span class="ico">❖</span><span class="lb-cn">小组委员会</span><span class="lb-en">Sub-Com</span></button>
+  <button data-p="staff"><span class="ico">☗</span><span class="lb-cn">职员</span><span class="lb-en">Employees</span></button>
 </nav>
 </div>
 
@@ -316,6 +318,14 @@ function renderBearers(rows){
     sectionHead("执行委员","Office Bearers")+
     `<div class="card-grid">`+ps.map(p=>personCard(p,true)).join("")+`</div>`;
 }
+function renderStaff(rows){
+  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
+  const el=document.getElementById("panel-staff");
+  if(!ps.length){el.innerHTML=sectionHead("职员","Employees")+`<div class="state">No employees listed yet 暂无职员资料</div>`;return;}
+  el.innerHTML=sectionHead("职员","Employees")+
+    `<span class="count-chip">共 ${ps.length} 位职员 · ${ps.length} employees</span>`+
+    `<div class="card-grid">`+ps.map(p=>personCard(p,false)).join("")+`</div>`;
+}
 function renderSubcom(rows){
   const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn);
   const groups=new Map();
@@ -388,7 +398,7 @@ function renderEvents(rows){
       <button class="acc-head" onclick="document.getElementById('pastAcc').classList.toggle('open')">
         <span class="bar" style="background:var(--dim)"></span>
         <span><div class="t-cn">已过活动</div><div class="t-en">Past Events</div></span>
-        <span class="n">${past.length} 项</span><span class="chev">▼</span>
+        <span class="n">${past.length} 项 event${past.length>1?"s":""}</span><span class="chev">▼</span>
       </button>
       <div class="acc-body" style="padding:12px 0 4px">${pastCards}</div>
     </div>`;
@@ -403,19 +413,28 @@ function renderEvents(rows){
         groups.get(c).push(e);   // an event with 2 categories appears in both
       }
     }
-    // alphabetical, with Uncategorised last
+    // Fixed display order; anything not listed follows alphabetically, Uncategorised last
+    const CAT_ORDER=["Fundraising","Partnership/CSR","Programme","Govt. Agency Invitation","Temple","Governance and Corporate Matters"];
+    const norm=s=>String(s).toLowerCase().replace(/[\s.]/g,"");
+    const rank=c=>{
+      const n=norm(c);
+      const i=CAT_ORDER.findIndex(x=>norm(x)===n);
+      if(i>-1) return i;                                    // listed category
+      if(String(c).startsWith("Uncategorised")) return 999;  // always last
+      return 500;                                           // unlisted: middle band
+    };
     const keys=[...groups.keys()].sort((a,b)=>{
-      const au=a.startsWith("Uncategorised"), bu=b.startsWith("Uncategorised");
-      if(au!==bu) return au?1:-1;
-      return a.localeCompare(b,"en",{sensitivity:"base"});
+      const ra=rank(a), rb=rank(b);
+      if(ra!==rb) return ra-rb;
+      return a.localeCompare(b,"en",{sensitivity:"base"});   // tie-break for unlisted
     });
     keys.forEach((c,i)=>{
       const list=groups.get(c).slice().sort((a,b)=>a.date-b.date);
       h+=`<div class="acc" id="catAcc${i}">
         <button class="acc-head" onclick="document.getElementById('catAcc${i}').classList.toggle('open')">
           <span class="bar"></span>
-          <span><div class="t-cn">${esc(c)}</div><div class="t-en">${list.length} event${list.length>1?"s":""}</div></span>
-          <span class="n">${list.length} 项</span><span class="chev">▼</span>
+          <span><div class="t-cn">${esc(c)}</div></span>
+          <span class="n">${list.length} 项 event${list.length>1?"s":""}</span><span class="chev">▼</span>
         </button>
         <div class="acc-body" style="padding:12px 0 4px">${list.map(e=>eventCard(e,"")).join("")}</div>
       </div>`;
@@ -486,6 +505,7 @@ function tryPassword(){
       renderBearers(sheet("bearer"));
       renderSubcom(sheet("sub"));
       renderEvents(sheet("event"));
+      renderStaff(sheet("employee").length?sheet("employee"):sheet("staff"));
       const info={};
       for(const r of sheet("info")){
         const vals=Object.values(r);
