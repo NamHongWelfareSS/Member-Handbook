@@ -347,7 +347,7 @@ function renderStaff(rows){
   GROUPS.forEach((g,i)=>{
     const list=buckets[i];
     if(!list.length) return;                 // hide empty groups
-    h+=`<div class="acc open" id="staffAcc${i}">
+    h+=`<div class="acc" id="staffAcc${i}">
       <button class="acc-head" onclick="document.getElementById('staffAcc${i}').classList.toggle('open')">
         <span class="bar"></span>
         <span><div class="t-cn">${g.cn}</div><div class="t-en">${g.en}</div></span>
