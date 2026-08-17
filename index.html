@@ -96,9 +96,10 @@ header .stamp{display:inline-block;margin-top:8px;font-size:.62rem;letter-spacin
 .acc{margin:0 14px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .acc-head{width:100%;display:flex;align-items:center;gap:10px;padding:14px 16px;background:none;border:none;cursor:pointer;text-align:left;font-family:inherit}
 .acc-head .bar{flex:0 0 4px;height:30px;border-radius:2px;background:var(--gold)}
-.acc-head .t-cn{font-size:1rem;font-weight:700;color:var(--navy)}
-.acc-head .t-en{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:1px}
-.acc-head .n{margin-left:auto;font-size:.7rem;color:var(--dim);background:var(--paper);border-radius:20px;padding:2px 9px}
+.acc-head .t-cn{font-size:1rem;font-weight:700;color:var(--navy);line-height:1.3}
+.acc-head .t-en{font-size:1rem;font-weight:700;color:var(--navy);line-height:1.3;letter-spacing:0;text-transform:none;margin-top:1px}
+.acc-head .acc-titles{min-width:0}
+.acc-head .n{margin-left:auto;font-size:.72rem;color:var(--dim);background:var(--paper);border-radius:20px;padding:3px 9px;white-space:nowrap;flex:0 0 auto}
 .acc-head .chev{flex:0 0 auto;color:var(--dim);transition:transform .2s;font-size:.8rem;margin-left:6px}
 .acc.open .chev{transform:rotate(180deg)}
 .acc-body{display:none;border-top:1px solid var(--line);padding-top:12px}
@@ -160,6 +161,23 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
   background:var(--navy);border:none;border-radius:10px;cursor:pointer}
 #gateBtn:active{background:var(--navy-deep)}
 .gate-err{display:none;color:#C0392B;font-size:.78rem;margin-top:12px}
+/* ---------- Calendar ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;padding:0 20px 14px}
+.legend .lg{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--ink)}
+.legend .lg i{width:11px;height:11px;border-radius:3px;display:inline-block;flex:0 0 auto}
+.cal{margin:0 10px 18px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal-title{padding:11px 14px;font-size:1rem;font-weight:700;color:var(--navy);background:var(--navy-soft)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-dow{padding:6px 0;text-align:center;font-size:.62rem;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--line);background:var(--paper)}
+.cal-cell{min-height:56px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 2px 4px}
+.cal-cell:nth-child(7n+7){border-right:none}
+.cal-cell.empty{background:#FBFCFE}
+.cal-cell.today{background:var(--gold-soft)}
+.cal-day{font-size:.66rem;font-weight:600;color:var(--dim);text-align:center;margin-bottom:2px;font-variant-numeric:tabular-nums}
+.cal-cell.today .cal-day{color:var(--navy-deep);font-weight:800}
+.cal-ev{font-size:.55rem;line-height:1.2;color:#fff;border-radius:3px;padding:2px 3px;margin-bottom:2px;
+  overflow-wrap:anywhere;hyphens:auto}
 </style>
 </head>
 <body>
@@ -193,9 +211,9 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
   </header>
 
   <div id="panel-events" class="panel active"></div>
+  <div id="panel-calendar" class="panel"></div>
   <div id="panel-members" class="panel"></div>
-  <div id="panel-bearers" class="panel"></div>
-  <div id="panel-subcom" class="panel"></div>
+  <div id="panel-roles" class="panel"></div>
   <div id="panel-staff" class="panel"></div>
 
   <footer id="footNote"></footer>
@@ -203,9 +221,9 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
 
 <nav>
   <button class="active" data-p="events"><span class="ico">▦</span><span class="lb-cn">活动日程</span><span class="lb-en">Events</span></button>
-  <button data-p="members"><span class="ico">▤</span><span class="lb-cn">委员名单</span><span class="lb-en">Members</span></button>
-  <button data-p="bearers"><span class="ico">◈</span><span class="lb-cn">执行委员</span><span class="lb-en">Bearers</span></button>
-  <button data-p="subcom"><span class="ico">❖</span><span class="lb-cn">小组委员会</span><span class="lb-en">Sub-Com</span></button>
+  <button data-p="calendar"><span class="ico">▩</span><span class="lb-cn">日历</span><span class="lb-en">Calendar</span></button>
+  <button data-p="members"><span class="ico">▤</span><span class="lb-cn">理事名单</span><span class="lb-en">Members</span></button>
+  <button data-p="roles"><span class="ico">◈</span><span class="lb-cn">职务分工</span><span class="lb-en">Roles</span></button>
   <button data-p="staff"><span class="ico">☗</span><span class="lb-cn">职员</span><span class="lb-en">Employees</span></button>
 </nav>
 </div>
@@ -302,8 +320,8 @@ function excelDate(v){
 /* ---------------- renderers ---------------- */
 function renderMembers(rows){
   const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
-  let h=sectionHead("委员名单","Full Committee Roster (in alphabetical order)");
-  h+=`<span class="count-chip">共 ${ps.length} 位委员 · ${ps.length} members</span>`;
+  let h=sectionHead("理事名单","Full Committee Roster (in alphabetical order)");
+  h+=`<span class="count-chip">共 ${ps.length} 位理事 · ${ps.length} members</span>`;
   h+=`<div class="roster">`+ps.map((p,i)=>`
     <div class="roster-row">
       <div class="roster-no">${String(p.order===9999?i+1:p.order).padStart(2,"0")}</div>
@@ -312,54 +330,31 @@ function renderMembers(rows){
     </div>`).join("")+`</div>`;
   document.getElementById("panel-members").innerHTML=h;
 }
-function renderBearers(rows){
-  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
-  document.getElementById("panel-bearers").innerHTML=
-    sectionHead("执行委员","Office Bearers")+
-    `<div class="card-grid">`+ps.map(p=>personCard(p,true)).join("")+`</div>`;
-}
-/* Classify an employee by their title into one of three groups.
-   Order matters: check assistant before physician so "TCM Clinic Assistant"
-   is never mis-read as a physician role. */
-function staffGroup(p){
-  const t=(String(p.titleEn||"")+" "+String(p.titleCn||"")).toLowerCase();
-  const isAssistant = t.includes("clinic assistant") || t.includes("中医助理") ||
-                      (t.includes("assistant") && (t.includes("tcm")||t.includes("中医")));
-  if(isAssistant) return 2;
-  if(t.includes("physician") || t.includes("中医师")) return 1;
-  return 0;   // everything else is Office
-}
-function renderStaff(rows){
-  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
-  const el=document.getElementById("panel-staff");
-  let h=sectionHead("职员","Employees");
-  if(!ps.length){el.innerHTML=h+`<div class="state">No employees listed yet 暂无职员资料</div>`;return;}
 
-  const GROUPS=[
-    {cn:"办公室",   en:"Office"},
-    {cn:"中医师",   en:"TCM Physician"},
-    {cn:"中医助理", en:"TCM Clinic Assistant"}
-  ];
-  const buckets=[[],[],[]];
-  for(const p of ps) buckets[staffGroup(p)].push(p);
-
-  h+=`<span class="count-chip">共 ${ps.length} 位职员 · ${ps.length} employees</span>`;
-  GROUPS.forEach((g,i)=>{
-    const list=buckets[i];
-    if(!list.length) return;                 // hide empty groups
-    h+=`<div class="acc" id="staffAcc${i}">
-      <button class="acc-head" onclick="document.getElementById('staffAcc${i}').classList.toggle('open')">
-        <span class="bar"></span>
-        <span><div class="t-cn">${g.cn}</div><div class="t-en">${g.en}</div></span>
-        <span class="n">${list.length} 位 staff</span><span class="chev">▼</span>
-      </button>
-      <div class="acc-body"><div class="card-grid">${list.map(p=>personCard(p,false)).join("")}</div></div>
-    </div>`;
-  });
-  el.innerHTML=h;
+/* ---- Roles & Responsibilities: Office Bearers first, then sub-committees A-Z ---- */
+function accBlock(id,cn,en,count,unit,cardsHTML){
+  return `<div class="acc" id="${id}">
+    <button class="acc-head" onclick="document.getElementById('${id}').classList.toggle('open')">
+      <span class="bar"></span>
+      <span class="acc-titles"><div class="t-cn">${esc(cn)}</div><div class="t-en">${esc(en)}</div></span>
+      <span class="n">${count} 位 ${unit}</span><span class="chev">&#9660;</span>
+    </button>
+    <div class="acc-body"><div class="card-grid">${cardsHTML}</div></div>
+  </div>`;
 }
-function renderSubcom(rows){
-  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn);
+function renderRoles(bearerRows,subRows){
+  let h=sectionHead("职务分工","Roles and Responsibilities");
+  let i=0;
+
+  // Office Bearers — keep the sheet's own order
+  const bearers=bearerRows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
+  if(bearers.length){
+    h+=accBlock("roleAcc"+(i++),"执行理事","Office Bearers",bearers.length,"Members",
+                bearers.map(p=>personCard(p,true)).join(""));
+  }
+
+  // Sub-committees — alphabetical by English name
+  const ps=subRows.map(toPerson).filter(p=>p.nameEn||p.nameCn);
   const groups=new Map();
   for(const p of ps){
     const key=String(p.group||"(Unassigned)").trim();
@@ -367,22 +362,183 @@ function renderSubcom(rows){
     const g=groups.get(key); if(!g.cn&&p.groupCn) g.cn=p.groupCn;
     g.members.push(p);
   }
-  let h=sectionHead("小组委员会","Sub-Committees");
-  let i=0;
-  for(const [en,g] of groups){
+  const keys=[...groups.keys()].sort((a,b)=>a.localeCompare(b,"en",{sensitivity:"base"}));
+  for(const en of keys){
+    const g=groups.get(en);
     g.members.sort((a,b)=>a.order-b.order);
-    h+=`<div class="acc" id="acc${i}">
-      <button class="acc-head" onclick="document.getElementById('acc${i}').classList.toggle('open')">
-        <span class="bar"></span>
-        <span><div class="t-cn">${esc(g.cn||en)}</div><div class="t-en">${esc(en)}</div></span>
-        <span class="n">${g.members.length} 位</span><span class="chev">▼</span>
-      </button>
-      <div class="acc-body"><div class="card-grid">${g.members.map(p=>personCard(p,false)).join("")}</div></div>
-    </div>`;
-    i++;
+    h+=accBlock("roleAcc"+(i++),g.cn||en,en,g.members.length,"Members",
+                g.members.map(p=>personCard(p,false)).join(""));
   }
-  document.getElementById("panel-subcom").innerHTML=h;
+  document.getElementById("panel-roles").innerHTML=h;
 }
+
+/* ---- Employees ---- */
+/* Classify by title. Order matters: check assistant before physician so
+   "TCM Clinic Assistant" is never mis-read as a physician role. */
+function staffGroup(p){
+  const t=(String(p.titleEn||"")+" "+String(p.titleCn||"")).toLowerCase();
+  const isAssistant = t.includes("clinic assistant") || t.includes("中医助理") ||
+                      (t.includes("assistant") && (t.includes("tcm")||t.includes("中医")));
+  if(isAssistant) return 2;
+  if(t.includes("physician") || t.includes("中医师")) return 1;
+  return 0;   // everything else is General Management Office
+}
+/* People pinned to the top of the GMO list, in this order. */
+const GMO_PINNED=["wong jin hoa","kathy"];
+function pinnedRank(p){
+  const n=String(p.nameEn||"").toLowerCase();
+  for(let i=0;i<GMO_PINNED.length;i++){ if(n.includes(GMO_PINNED[i])) return i; }
+  return 999;
+}
+function byName(a,b){
+  return String(a.nameEn||a.nameCn).localeCompare(String(b.nameEn||b.nameCn),"en",{sensitivity:"base"});
+}
+function byTitle(a,b){
+  const t=(x)=>String(x.titleEn||x.titleCn||"");
+  const r=t(a).localeCompare(t(b),"en",{sensitivity:"base"});
+  return r!==0?r:byName(a,b);
+}
+function renderStaff(rows){
+  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn);
+  const el=document.getElementById("panel-staff");
+  let h=sectionHead("职员","Employees");
+  if(!ps.length){el.innerHTML=h+`<div class="state">No employees listed yet 暂无职员资料</div>`;return;}
+
+  const GROUPS=[
+    {cn:"办公室职员", en:"General Management Office"},
+    {cn:"中医师",     en:"TCM Physician"},
+    {cn:"中医助理",   en:"TCM Clinic Assistant"}
+  ];
+  const buckets=[[],[],[]];
+  for(const p of ps) buckets[staffGroup(p)].push(p);
+
+  // GMO: pinned people first (fixed order), then everyone else by job title
+  buckets[0].sort((a,b)=>{
+    const ra=pinnedRank(a), rb=pinnedRank(b);
+    if(ra!==rb) return ra-rb;
+    if(ra!==999) return 0;              // both pinned: keep listed order
+    return byTitle(a,b);
+  });
+  buckets[1].sort(byName);              // TCM Physician  — by name A-Z
+  buckets[2].sort(byName);              // TCM Assistant  — by name A-Z
+
+  h+=`<span class="count-chip">共 ${ps.length} 位职员 · ${ps.length} employees</span>`;
+  GROUPS.forEach((g,i)=>{
+    const list=buckets[i];
+    if(!list.length) return;            // hide empty groups
+    h+=accBlock("staffAcc"+i,g.cn,g.en,list.length,"Staff",list.map(p=>personCard(p,false)).join(""));
+  });
+  el.innerHTML=h;
+}
+/* "Last Updated" may arrive as a plain string, or — when the cell holds
+   =TODAY() — as an Excel serial number. Render both as "17 Aug 2026". */
+function fmtStamp(v){
+  if(typeof v==="number" && v>20000 && v<80000){
+    const d=excelDate(v);
+    if(d) return String(d.getDate()).padStart(2,"0")+" "+MONTHS[d.getMonth()]+" "+d.getFullYear();
+  }
+  const s=String(v).trim();
+  if(/^\d+(\.\d+)?$/.test(s)){                    // numeric text, e.g. "46251"
+    const d=excelDate(Number(s));
+    if(d) return String(d.getDate()).padStart(2,"0")+" "+MONTHS[d.getMonth()]+" "+d.getFullYear();
+  }
+  const d2=excelDate(s);                          // ISO / DD-MM-YYYY strings
+  if(d2 && /\d{4}/.test(s) && /[-\/]/.test(s))
+    return String(d2.getDate()).padStart(2,"0")+" "+MONTHS[d2.getMonth()]+" "+d2.getFullYear();
+  return s.toUpperCase();
+}
+
+/* Short title for the calendar — column F of the Events sheet.
+   Matches a sensible header if present, otherwise falls back to the
+   6th column by position. */
+function shortTitle(r){
+  const byHeader=pick(r,["shorttitle","short","calendartitle","calendar","abbrev","简称","短名"]);
+  if(byHeader) return byHeader;
+  const vals=Object.values(r);
+  return vals.length>=6 ? vals[5] : "";
+}
+function parseEvents(rows){
+  return rows.map(r=>({
+    date:excelDate(pick(r,["date","日期"])),
+    nameEn:pick(r,["eventenglish","eventen","event","活动名称","活动"]),
+    nameCn:pick(r,["event中文","eventcn"]),
+    pic:pick(r,["personnelincharge","personincharge","pic","incharge","负责人"]),
+    cats:splitCategories(pick(r,["information","category","categories","类别","分类"])),
+    short:shortTitle(r)
+  })).filter(e=>e.date&&(e.nameEn||e.nameCn)).sort((a,b)=>a.date-b.date);
+}
+
+/* ---- Calendar ---- */
+const CAT_COLOURS=[
+  {match:"fundraising",              c:"#C0392B"},
+  {match:"partnership/csr",          c:"#1E7A5A"},
+  {match:"programme",                c:"#1F5FA8"},
+  {match:"govtagencyinvitation",     c:"#7B4CA0"},
+  {match:"temple",                   c:"#B5761F"},
+  {match:"governanceandcorporatematters", c:"#4A5568"}
+];
+const CAT_FALLBACK="#8A94A6";
+function catColour(cat){
+  const n=String(cat).toLowerCase().replace(/[\s.]/g,"");
+  const hit=CAT_COLOURS.find(x=>x.match===n);
+  return hit?hit.c:CAT_FALLBACK;
+}
+function renderCalendar(rows){
+  const evs=parseEvents(rows);
+  const el=document.getElementById("panel-calendar");
+  let h=sectionHead("日历","Calendar");
+  if(!evs.length){el.innerHTML=h+`<div class="state">No events listed yet 暂无活动</div>`;return;}
+
+  // Legend — only categories actually in use, in the fixed display order
+  const used=[];
+  for(const e of evs) for(const c of e.cats) if(!used.includes(c)) used.push(c);
+  const ORDER=["Fundraising","Partnership/CSR","Programme","Govt. Agency Invitation","Temple","Governance and Corporate Matters"];
+  const nrm=s=>String(s).toLowerCase().replace(/[\s.]/g,"");
+  used.sort((a,b)=>{
+    const ia=ORDER.findIndex(x=>nrm(x)===nrm(a)), ib=ORDER.findIndex(x=>nrm(x)===nrm(b));
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  h+=`<div class="legend">`+used.map(c=>
+      `<span class="lg"><i style="background:${catColour(c)}"></i>${esc(c)}</span>`).join("")+`</div>`;
+
+  // Group events by month
+  const months=new Map();
+  for(const e of evs){
+    const k=e.date.getFullYear()+"-"+String(e.date.getMonth()).padStart(2,"0");
+    if(!months.has(k)) months.set(k,[]);
+    months.get(k).push(e);
+  }
+  const today=new Date(); today.setHours(0,0,0,0);
+
+  for(const [k,list] of [...months.entries()].sort()){
+    const [yy,mm]=k.split("-").map(Number);
+    const first=new Date(yy,mm,1);
+    const daysInMonth=new Date(yy,mm+1,0).getDate();
+    let lead=(first.getDay()+6)%7;               // Monday = 0
+    h+=`<div class="cal">
+      <div class="cal-title">${MONTHS_FULL[mm]} ${yy}</div>
+      <div class="cal-grid">
+        ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<div class="cal-dow">${d}</div>`).join("")}`;
+    for(let i=0;i<lead;i++) h+=`<div class="cal-cell empty"></div>`;
+    for(let day=1;day<=daysInMonth;day++){
+      const cellDate=new Date(yy,mm,day);
+      const isToday = cellDate.getTime()===today.getTime();
+      const dayEvents=list.filter(e=>e.date.getDate()===day);
+      h+=`<div class="cal-cell${isToday?" today":""}">
+        <div class="cal-day">${day}</div>
+        ${dayEvents.map(e=>{
+          const label=String(e.short||e.nameEn||e.nameCn).trim();
+          const col=catColour(e.cats[0]);
+          const full=[e.nameEn,e.nameCn].filter(Boolean).join(" / ");
+          return `<div class="cal-ev" style="background:${col}" title="${esc(full)}">${esc(label)}</div>`;
+        }).join("")}
+      </div>`;
+    }
+    h+=`</div></div>`;
+  }
+  el.innerHTML=h;
+}
+
 function eventCard(e,cls){
   return `<div class="event-card ${cls}">
     <div class="date-badge">
@@ -409,13 +565,7 @@ function splitCategories(v){
 
 function renderEvents(rows){
   const today=new Date(); today.setHours(0,0,0,0);
-  const evs=rows.map(r=>({
-    date:excelDate(pick(r,["date","日期"])),
-    nameEn:pick(r,["eventenglish","eventen","event","活动名称","活动"]),
-    nameCn:pick(r,["event中文","eventcn"]),
-    pic:pick(r,["personnelincharge","personincharge","pic","incharge","负责人"]),
-    cats:splitCategories(pick(r,["information","category","categories","类别","分类"]))
-  })).filter(e=>e.date&&(e.nameEn||e.nameCn)).sort((a,b)=>a.date-b.date);
+  const evs=parseEvents(rows);
 
   let h=sectionHead("活动日程","Key Event Dates");
   if(!evs.length){document.getElementById("panel-events").innerHTML=h+`<div class="state">No events listed yet 暂无活动</div>`;return;}
@@ -429,7 +579,7 @@ function renderEvents(rows){
     h+=`<div class="acc" id="pastAcc">
       <button class="acc-head" onclick="document.getElementById('pastAcc').classList.toggle('open')">
         <span class="bar" style="background:var(--dim)"></span>
-        <span><div class="t-cn">已过活动</div><div class="t-en">Past Events</div></span>
+        <span class="acc-titles"><div class="t-cn">已过活动</div><div class="t-en">Past Events</div></span>
         <span class="n">${past.length} 项 event${past.length>1?"s":""}</span><span class="chev">▼</span>
       </button>
       <div class="acc-body" style="padding:12px 0 4px">${pastCards}</div>
@@ -465,7 +615,7 @@ function renderEvents(rows){
       h+=`<div class="acc" id="catAcc${i}">
         <button class="acc-head" onclick="document.getElementById('catAcc${i}').classList.toggle('open')">
           <span class="bar"></span>
-          <span><div class="t-cn">${esc(c)}</div></span>
+          <span class="acc-titles"><div class="t-cn">${esc(c)}</div></span>
           <span class="n">${list.length} 项 event${list.length>1?"s":""}</span><span class="chev">▼</span>
         </button>
         <div class="acc-body" style="padding:12px 0 4px">${list.map(e=>eventCard(e,"")).join("")}</div>
@@ -533,10 +683,11 @@ function tryPassword(){
 
     // Prepare (but don't run) all rendering until unlocked
     _renderAll=function(){
+      const evRows=sheet("event");
       renderMembers(sheet("committee"));
-      renderBearers(sheet("bearer"));
-      renderSubcom(sheet("sub"));
-      renderEvents(sheet("event"));
+      renderRoles(sheet("bearer"),sheet("sub"));
+      renderEvents(evRows);
+      renderCalendar(evRows);
       renderStaff(sheet("employee").length?sheet("employee"):sheet("staff"));
       const info={};
       for(const r of sheet("info")){
@@ -544,9 +695,9 @@ function tryPassword(){
         if(vals.length>=2) info[String(vals[0]).toLowerCase().replace(/[\s_]/g,"")]=vals[1];
       }
       const upd=info["lastupdated"]||info["updated"]||"";
-      document.getElementById("updatedStamp").textContent=upd?("UPDATED "+String(upd).toUpperCase()):"COMMITTEE HANDBOOK";
+      document.getElementById("updatedStamp").textContent=upd?("UPDATED "+fmtStamp(upd)):"COMMITTEE HANDBOOK";
       const note=info["footernote"]||info["footer"]||"";
-      document.getElementById("footNote").textContent=note||"南凤福利协会 Nam Hong Welfare Service Society · For committee members' reference 仅供委员参考";
+      document.getElementById("footNote").textContent=note||"南凤福利协会 Nam Hong Welfare Service Society · For committee members' reference 仅供理事参考";
     };
 
     // Wire up the gate
