@@ -71,12 +71,12 @@ header .stamp{display:inline-block;margin-top:8px;font-size:.62rem;letter-spacin
 
 /* ---------- Tab 1: roster list ---------- */
 .roster{background:var(--card);margin:0 14px 16px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.roster-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line)}
 .roster-row:last-child{border-bottom:none}
 .roster-no{flex:0 0 26px;font-size:.72rem;font-weight:600;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
-.roster-av{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:0 0 38px;background:var(--navy-soft)}
-.roster-av-fb{width:38px;height:38px;border-radius:50%;flex:0 0 38px;background:var(--navy);color:#fff;
-  display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700}
+.roster-row{display:flex;align-items:center;gap:14px;padding:14px 14px;border-bottom:1px solid var(--line)}
+.roster-av{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:0 0 72px;background:var(--navy-soft)}
+.roster-av-fb{width:72px;height:72px;border-radius:50%;flex:0 0 72px;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700}
 .roster-name .en{font-size:.95rem;font-weight:600}
 .roster-name .cn{font-size:.85rem;color:var(--dim);margin-left:8px}
 .roster-title{margin-left:auto;font-size:.72rem;color:var(--dim);text-align:right}
@@ -179,12 +179,17 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
   display:flex;flex-direction:column;align-items:center;gap:1px}
 .cal-dow .dw-en{font-size:.72rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--navy)}
 .cal-dow .dw-cn{font-size:.72rem;font-weight:700;color:var(--navy)}
+.legend.inner{padding:2px 16px 12px;margin:0 14px 6px}
+.legend .lg-star{background:none;color:#C0392B;font-size:.95rem;line-height:1;width:auto;height:auto}
+.legend .lg-today{background:none;width:15px;height:15px;border:1.5px solid #111;border-radius:50%}
 .cal-cell{min-height:56px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 2px 4px}
 .cal-cell:nth-child(7n+7){border-right:none}
 .cal-cell.empty{background:#FBFCFE}
-.cal-cell.today{background:var(--gold-soft)}
-.cal-day{font-size:.66rem;font-weight:600;color:var(--dim);text-align:center;margin-bottom:2px;font-variant-numeric:tabular-nums}
-.cal-cell.today .cal-day{color:var(--navy-deep);font-weight:800}
+.cal-day{display:flex;align-items:center;justify-content:center;gap:1px;margin-bottom:2px;min-height:19px}
+.cal-day .dnum{font-size:.66rem;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
+  display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px}
+.cal-day .dnum.is-today{font-weight:800;color:#111;border:1.5px solid #111;border-radius:50%}
+.ph-star{color:#C0392B;font-size:.6rem;line-height:1}
 .cal-ev{font-size:.55rem;line-height:1.2;color:#fff;border-radius:3px;padding:2px 3px;margin-bottom:2px;
   overflow-wrap:anywhere;hyphens:auto}
 </style>
@@ -433,12 +438,12 @@ function renderStaff(rows){
   const buckets=[[],[],[]];
   for(const p of ps) buckets[staffGroup(p)].push(p);
 
-  // GMO: pinned people first (fixed order), then everyone else by job title
+  // GMO: pinned people first (fixed order), then everyone else by name A-Z
   buckets[0].sort((a,b)=>{
     const ra=pinnedRank(a), rb=pinnedRank(b);
     if(ra!==rb) return ra-rb;
     if(ra!==999) return 0;              // both pinned: keep listed order
-    return byTitle(a,b);
+    return byName(a,b);
   });
   buckets[1].sort(byName);              // TCM Physician  — by name A-Z
   buckets[2].sort(byName);              // TCM Assistant  — by name A-Z
@@ -504,23 +509,68 @@ function catColour(cat){
   const hit=CAT_COLOURS.find(x=>x.match===n);
   return hit?hit.c:CAT_FALLBACK;
 }
+/* Singapore public holidays.
+   Source: Ministry of Manpower gazetted list for 2026 (11 holidays, plus the
+   three Monday in-lieu days for holidays falling on a Sunday).
+   To add later years without editing this file, create a sheet named
+   "Holidays" in data.xlsx with columns: Date | Holiday. Rows there are
+   merged in and override the built-in list. */
+let PUBLIC_HOLIDAYS={
+  "2026-00-01":"New Year's Day 元旦",
+  "2026-01-17":"Chinese New Year 农历新年",
+  "2026-01-18":"Chinese New Year 农历新年",
+  "2026-02-21":"Hari Raya Puasa 开斋节",
+  "2026-03-03":"Good Friday 耶稣受难日",
+  "2026-04-01":"Labour Day 劳动节",
+  "2026-04-27":"Hari Raya Haji 哈芝节",
+  "2026-04-31":"Vesak Day 卫塞节",
+  "2026-05-01":"Vesak Day holiday-in-lieu 卫塞节补假",
+  "2026-07-09":"National Day 国庆日",
+  "2026-07-10":"National Day holiday-in-lieu 国庆日补假",
+  "2026-10-08":"Deepavali 屠妖节",
+  "2026-10-09":"Deepavali holiday-in-lieu 屠妖节补假",
+  "2026-11-25":"Christmas Day 圣诞节"
+};
+function loadHolidaySheet(rows){
+  for(const r of rows){
+    const d=excelDate(pick(r,["date","日期"]));
+    const name=pick(r,["holiday","name","occasion","公假","节日"]);
+    if(!d) continue;
+    const k=d.getFullYear()+"-"+String(d.getMonth()).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    PUBLIC_HOLIDAYS[k]=name||"Public Holiday 公假";
+  }
+}
+
+/* Legend markup shared by the Calendar page and the Past Events group. */
+const CAT_ORDER_DISPLAY=["Fundraising","Partnership/CSR","Programme","Govt. Agency Invitation","Temple","Governance and Corporate Matters"];
+function nrmCat(s){return String(s).toLowerCase().replace(/[\s.]/g,"");}
+function usedCategories(evs){
+  const used=[];
+  for(const e of evs) for(const c of e.cats) if(!used.includes(c)) used.push(c);
+  used.sort((a,b)=>{
+    const ia=CAT_ORDER_DISPLAY.findIndex(x=>nrmCat(x)===nrmCat(a));
+    const ib=CAT_ORDER_DISPLAY.findIndex(x=>nrmCat(x)===nrmCat(b));
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  return used;
+}
+function legendHTML(evs,extra){
+  let items=usedCategories(evs).map(c=>
+    `<span class="lg"><i style="background:${catColour(c)}"></i>${esc(c)}</span>`).join("");
+  if(extra) items+=extra;
+  return items;
+}
+
 function renderCalendar(rows){
   const evs=parseEvents(rows);
   const el=document.getElementById("panel-calendar");
   let h=sectionHead("日历","Calendar");
   if(!evs.length){el.innerHTML=h+`<div class="state">No events listed yet 暂无活动</div>`;return;}
 
-  // Legend — only categories actually in use, in the fixed display order
-  const used=[];
-  for(const e of evs) for(const c of e.cats) if(!used.includes(c)) used.push(c);
-  const ORDER=["Fundraising","Partnership/CSR","Programme","Govt. Agency Invitation","Temple","Governance and Corporate Matters"];
-  const nrm=s=>String(s).toLowerCase().replace(/[\s.]/g,"");
-  used.sort((a,b)=>{
-    const ia=ORDER.findIndex(x=>nrm(x)===nrm(a)), ib=ORDER.findIndex(x=>nrm(x)===nrm(b));
-    return (ia<0?99:ia)-(ib<0?99:ib);
-  });
-  h+=`<div class="legend sticky">`+used.map(c=>
-      `<span class="lg"><i style="background:${catColour(c)}"></i>${esc(c)}</span>`).join("")+`</div>`;
+  // Legend — categories in use, plus the two day-markers
+  const markers=`<span class="lg"><i class="lg-star">★</i>Public Holiday 公假</span>`+
+                `<span class="lg"><i class="lg-today"></i>Today 今天</span>`;
+  h+=`<div class="legend sticky">`+legendHTML(evs,markers)+`</div>`;
 
   // Group events by month
   const months=new Map();
@@ -554,16 +604,19 @@ function renderCalendar(rows){
     const daysInMonth=new Date(yy,mm+1,0).getDate();
     const lead=(first.getDay()+6)%7;               // Monday = 0
     h+=`<div class="cal" id="cal-${k}"${k===curKey?' data-current="1"':''}>
-      <div class="cal-title"><span class="ct-en">${MONTHS_FULL[mm]} ${yy}</span><span class="ct-cn">${MONTHS_CN_TEXT[mm]} ${cnYear(yy)}年</span></div>
+      <div class="cal-title"><span class="ct-en">${MONTHS_FULL[mm]} ${yy}</span><span class="ct-cn">${cnYear(yy)}年 ${MONTHS_CN_TEXT[mm]}</span></div>
       <div class="cal-grid">
         ${DOW.map(d=>`<div class="cal-dow"><span class="dw-en">${d[0]}</span><span class="dw-cn">${d[1]}</span></div>`).join("")}`;
     for(let i=0;i<lead;i++) h+=`<div class="cal-cell empty"></div>`;
     for(let day=1;day<=daysInMonth;day++){
       const cellDate=new Date(yy,mm,day);
       const isToday = cellDate.getTime()===today.getTime();
+      const ph = PUBLIC_HOLIDAYS[k+"-"+String(day).padStart(2,"0")];
       const dayEvents=list.filter(e=>e.date.getDate()===day);
-      h+=`<div class="cal-cell${isToday?" today":""}">
-        <div class="cal-day">${day}</div>
+      h+=`<div class="cal-cell">
+        <div class="cal-day">
+          <span class="dnum${isToday?" is-today":""}">${day}</span>${ph?`<span class="ph-star" title="${esc(ph)}">★</span>`:""}
+        </div>
         ${dayEvents.map(e=>{
           const label=String(e.short||e.nameEn||e.nameCn).trim();
           const col=catColour(e.cats[0]);
@@ -600,8 +653,9 @@ function scrollCalendarToCurrent(){
   window.scrollTo({top:Math.max(0,y)});
 }
 
-function eventCard(e,cls){
-  return `<div class="event-card ${cls}">
+function eventCard(e,cls,catOverride){
+  const col=catColour(catOverride||(e.cats&&e.cats[0]));
+  return `<div class="event-card ${cls}" style="border-left:5px solid ${col}">
     <div class="date-badge">
       <div class="d">${String(e.date.getDate()).padStart(2,"0")} ${MONTHS[e.date.getMonth()]}</div>
       <div class="m">${e.date.getFullYear()}</div>
@@ -636,6 +690,7 @@ function renderEvents(rows){
 
   // ---- Past events: collapsed dropdown (most recent first) ----
   if(past.length){
+    const pastLegend=`<div class="legend inner">`+legendHTML(past)+`</div>`;
     const pastCards=past.slice().reverse().map(e=>eventCard(e,"past")).join("");
     h+=`<div class="acc" id="pastAcc">
       <button class="acc-head" onclick="document.getElementById('pastAcc').classList.toggle('open')">
@@ -643,7 +698,7 @@ function renderEvents(rows){
         <span class="acc-titles"><div class="t-cn">已过活动</div><div class="t-en">Past Events</div></span>
         <span class="n">${past.length} 项 event${past.length>1?"s":""}</span><span class="chev">▼</span>
       </button>
-      <div class="acc-body" style="padding:12px 0 4px">${pastCards}</div>
+      <div class="acc-body" style="padding:10px 0 4px">${pastLegend}${pastCards}</div>
     </div>`;
   }
 
@@ -679,7 +734,7 @@ function renderEvents(rows){
           <span class="acc-titles"><div class="t-cn"><i class="cat-dot" style="background:${catColour(c)}"></i>${esc(c)}</div></span>
           <span class="n">${list.length} 项 event${list.length>1?"s":""}</span><span class="chev">▼</span>
         </button>
-        <div class="acc-body" style="padding:12px 0 4px">${list.map(e=>eventCard(e,"")).join("")}</div>
+        <div class="acc-body" style="padding:12px 0 4px">${list.map(e=>eventCard(e,"",c)).join("")}</div>
       </div>`;
     });
   } else {
@@ -747,6 +802,7 @@ function tryPassword(){
     // Prepare (but don't run) all rendering until unlocked
     _renderAll=function(){
       const evRows=sheet("event");
+      loadHolidaySheet(sheet("holiday"));
       renderMembers(sheet("committee"));
       renderRoles(sheet("bearer"),sheet("sub"));
       renderEvents(evRows);
