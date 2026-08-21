@@ -190,6 +190,8 @@ footer{padding:14px 20px 20px;text-align:center;font-size:.62rem;color:#9AA1B0;l
   display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px}
 .cal-day .dnum.is-today{font-weight:800;color:#111;border:1.5px solid #111;border-radius:50%}
 .ph-star{color:#C0392B;font-size:.6rem;line-height:1}
+.ph-name{font-size:.5rem;line-height:1.15;color:#C0392B;font-weight:600;text-align:center;
+  margin:0 0 3px;overflow-wrap:anywhere;hyphens:auto}
 .cal-ev{font-size:.55rem;line-height:1.2;color:#fff;border-radius:3px;padding:2px 3px;margin-bottom:2px;
   overflow-wrap:anywhere;hyphens:auto}
 </style>
@@ -541,6 +543,15 @@ function loadHolidaySheet(rows){
   }
 }
 
+/* A row in the Events sheet is treated as a public holiday when its category
+   (column E) says so. These are calendar annotations, not activities. */
+function isPublicHoliday(e){
+  return (e.cats||[]).some(c=>{
+    const n=nrmCat(c);
+    return n.includes("publicholiday")||n.includes("公假")||n.includes("公共假期")||n==="holiday";
+  });
+}
+
 /* Legend markup shared by the Calendar page and the Past Events group. */
 const CAT_ORDER_DISPLAY=["Fundraising","Partnership/CSR","Programme","Govt. Agency Invitation","Temple","Governance and Corporate Matters"];
 function nrmCat(s){return String(s).toLowerCase().replace(/[\s.]/g,"");}
@@ -562,10 +573,22 @@ function legendHTML(evs,extra){
 }
 
 function renderCalendar(rows){
-  const evs=parseEvents(rows);
+  const all=parseEvents(rows);
+  const phEvents=all.filter(isPublicHoliday);
+  const evs=all.filter(e=>!isPublicHoliday(e));      // activities only
   const el=document.getElementById("panel-calendar");
   let h=sectionHead("日历","Calendar");
-  if(!evs.length){el.innerHTML=h+`<div class="state">No events listed yet 暂无活动</div>`;return;}
+  if(!all.length){el.innerHTML=h+`<div class="state">No events listed yet 暂无活动</div>`;return;}
+
+  // Public holidays sourced from the Events sheet; fall back to the built-in
+  // MOM list only when the sheet carries none.
+  const phByDate={};
+  for(const e of phEvents){
+    const k=e.date.getFullYear()+"-"+String(e.date.getMonth()).padStart(2,"0")+"-"+String(e.date.getDate()).padStart(2,"0");
+    const label=String(e.short||e.nameEn||e.nameCn).trim();
+    phByDate[k]=phByDate[k]?phByDate[k]+" / "+label:label;
+  }
+  const usingSheetPH=Object.keys(phByDate).length>0;
 
   // Legend — categories in use, plus the two day-markers
   const markers=`<span class="lg"><i class="lg-star">★</i>Public Holiday</span>`+
@@ -583,8 +606,10 @@ function renderCalendar(rows){
   const curKey=today.getFullYear()+"-"+String(today.getMonth()).padStart(2,"0");
 
   // Build a CONTINUOUS run of months from the earliest to the latest,
-  // always including the current month even if it has no events.
-  const allKeys=[...months.keys(),curKey].sort();
+  // always including the current month, and any month that has only a
+  // public holiday and no activity.
+  const phKeys=Object.keys(phByDate).map(x=>x.slice(0,7));
+  const allKeys=[...months.keys(),...phKeys,curKey].sort();
   const [sy,sm]=allKeys[0].split("-").map(Number);
   const [ey,em]=allKeys[allKeys.length-1].split("-").map(Number);
   const span=[];
@@ -611,12 +636,14 @@ function renderCalendar(rows){
     for(let day=1;day<=daysInMonth;day++){
       const cellDate=new Date(yy,mm,day);
       const isToday = cellDate.getTime()===today.getTime();
-      const ph = PUBLIC_HOLIDAYS[k+"-"+String(day).padStart(2,"0")];
+      const dkey=k+"-"+String(day).padStart(2,"0");
+      const phName = usingSheetPH ? phByDate[dkey] : (PUBLIC_HOLIDAYS[dkey]||"");
       const dayEvents=list.filter(e=>e.date.getDate()===day);
       h+=`<div class="cal-cell">
         <div class="cal-day">
-          <span class="dnum${isToday?" is-today":""}">${day}</span>${ph?`<span class="ph-star" title="${esc(ph)}">★</span>`:""}
+          <span class="dnum${isToday?" is-today":""}">${day}</span>${phName?`<span class="ph-star">★</span>`:""}
         </div>
+        ${phName?`<div class="ph-name">${esc(phName)}</div>`:""}
         ${dayEvents.map(e=>{
           const label=String(e.short||e.nameEn||e.nameCn).trim();
           const col=catColour(e.cats[0]);
@@ -680,7 +707,7 @@ function splitCategories(v){
 
 function renderEvents(rows){
   const today=new Date(); today.setHours(0,0,0,0);
-  const evs=parseEvents(rows);
+  const evs=parseEvents(rows).filter(e=>!isPublicHoliday(e));   // holidays live on the Calendar
 
   let h=sectionHead("活动日程","Key Event Dates");
   if(!evs.length){document.getElementById("panel-events").innerHTML=h+`<div class="state">No events listed yet 暂无活动</div>`;return;}
