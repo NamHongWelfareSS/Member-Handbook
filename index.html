@@ -568,8 +568,8 @@ function renderCalendar(rows){
   if(!evs.length){el.innerHTML=h+`<div class="state">No events listed yet 暂无活动</div>`;return;}
 
   // Legend — categories in use, plus the two day-markers
-  const markers=`<span class="lg"><i class="lg-star">★</i>Public Holiday 公假</span>`+
-                `<span class="lg"><i class="lg-today"></i>Today 今天</span>`;
+  const markers=`<span class="lg"><i class="lg-star">★</i>Public Holiday</span>`+
+                `<span class="lg"><i class="lg-today"></i>Today</span>`;
   h+=`<div class="legend sticky">`+legendHTML(evs,markers)+`</div>`;
 
   // Group events by month
