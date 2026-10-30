@@ -80,6 +80,8 @@ header .stamp{display:inline-block;margin-top:8px;font-size:.62rem;letter-spacin
 .roster-name .en{font-size:.95rem;font-weight:600}
 .roster-name .cn{font-size:.85rem;color:var(--dim);margin-left:8px}
 .roster-title{margin-left:auto;font-size:.72rem;color:var(--dim);text-align:right}
+.special-gap{height:22px;margin:0 34px;border-top:1px dashed var(--line)}
+.roster-special{border:1.5px solid var(--gold)}
 .count-chip{margin:0 20px 8px;display:inline-block;font-size:.72rem;color:var(--navy);background:var(--navy-soft);border-radius:20px;padding:3px 12px}
 
 /* ---------- Cards (Tabs 2 & 3) ---------- */
@@ -336,16 +338,30 @@ function excelDate(v){
 
 /* ---------------- renderers ---------------- */
 function renderMembers(rows){
-  const ps=rows.map(toPerson).filter(p=>p.nameEn||p.nameCn).sort((a,b)=>a.order-b.order);
-  let h=sectionHead("理事名单","Full Committee Roster (in alphabetical order)");
-  h+=`<span class="count-chip">共 ${ps.length} 位理事 · ${ps.length} members</span>`;
-  h+=`<div class="roster">`+ps.map((p,i)=>`
+  // Rows whose "No" column holds text (e.g. "Special Committee Member") are shown
+  // in a separate standalone box below the main roster, not counted as members.
+  const all=rows.map(r=>{const p=toPerson(r);const raw=String(pick(r,["no","order","序"])??"").trim();
+    p.special=(raw!==""&&isNaN(Number(raw)))?raw:"";return p;}).filter(p=>p.nameEn||p.nameCn);
+  const ps=all.filter(p=>!p.special).sort((a,b)=>a.order-b.order);
+  const sp=all.filter(p=>p.special);
+  const row=(p,i,num)=>`
     <div class="roster-row">
-      <div class="roster-no">${String(p.order===9999?i+1:p.order).padStart(2,"0")}</div>
+      ${num?`<div class="roster-no">${String(p.order===9999?i+1:p.order).padStart(2,"0")}</div>`:""}
       ${rosterAvatar(p)}
       <div class="roster-name"><span class="en">${esc(p.nameEn)}</span><span class="cn">${esc(p.nameCn)}</span></div>
       ${p.titleEn?`<div class="roster-title">${esc(p.titleEn)}</div>`:""}
-    </div>`).join("")+`</div>`;
+    </div>`;
+  let h=sectionHead("理事名单","Full Committee Roster (in alphabetical order)");
+  h+=`<span class="count-chip">共 ${ps.length} 位理事 · ${ps.length} members</span>`;
+  h+=`<div class="roster">`+ps.map((p,i)=>row(p,i,true)).join("")+`</div>`;
+  // group special rows by their label (e.g. "Special Committee Member")
+  const groups=[...new Set(sp.map(p=>p.special))];
+  groups.forEach(g=>{
+    const cn=/special\s*committee/i.test(g)?"特别理事":"";
+    h+=`<div class="special-gap"></div>`;
+    h+=sectionHead(cn||esc(g),cn?esc(g):"");
+    h+=`<div class="roster roster-special">`+sp.filter(p=>p.special===g).map((p,i)=>row(p,i,false)).join("")+`</div>`;
+  });
   document.getElementById("panel-members").innerHTML=h;
 }
 /* Small round thumbnail for the roster rows; falls back to initials. */
